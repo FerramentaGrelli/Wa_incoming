@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Message Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        #messages {
+            margin-bottom: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #fff;
+        }
+        .message {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .message:hover {
+            background-color: #eef;
+        }
+        .copy-button {
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .copy-button:hover {
+            background-color: #0056b3;
+        }
+        textarea {
+            width: 100%;
+            resize: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>WhatsApp Message Manager</h1>
+    <div id="messages">
+        <p>Caricamento messaggi...</p>
+    </div>
+
+    <h2>Invia una risposta</h2>
+    <form id="response-form">
+        <label for="recipient">Numero del destinatario:</label><br>
+        <input type="text" id="recipient" name="recipient" placeholder="whatsapp:+1234567890" required><br><br>
+        <label for="message">Messaggio:</label><br>
+        <textarea id="message" name="message" rows="4" required></textarea><br><br>
+        <button type="submit">Invia</button>
+    </form>
+
+    <script>
+        // Recupera i messaggi dal server
+        async function fetchMessages() {
+            const response = await fetch('http://localhost:5000/get-messages');
+            const messages = await response.json();
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML = '';
+
+            messages.forEach(msg => {
+                const div = document.createElement('div');
+                div.classList.add('message');
+                div.innerHTML = `
+                    <span><strong>Da:</strong> ${msg.sender}<br><strong>Messaggio:</strong> ${msg.message}</span>
+                    <button class="copy-button" onclick="copyNumber('${msg.sender}')">Rispondi</button>
+                `;
+                messagesDiv.appendChild(div);
+            });
+             // Se il messaggio contiene un URL per un'immagine
+             if (msg.mediaUrl) {
+                    const img = document.createElement('img');
+                    img.src = msg.mediaUrl;
+                    div.appendChild(img);
+                }
+        }
+
+        // Copia il numero del mittente nella casella del destinatario
+        function copyNumber(number) {
+            const recipientInput = document.getElementById('recipient');
+            recipientInput.value = number;
+        }
+
+        // Invia una risposta
+        const form = document.getElementById('response-form');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const recipient = document.getElementById('recipient').value;
+            const message = document.getElementById('message').value;
+
+            const response = await fetch('http://localhost:5000/send-message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ recipient, message })
+            });
+
+            if (response.ok) {
+                alert('Messaggio inviato con successo!');
+                form.reset();
+            } else {
+                alert('Errore nell\'invio del messaggio.');
+            }
+        });
+
+        // Aggiorna i messaggi periodicamente
+        setInterval(fetchMessages, 5000);
+        fetchMessages();
+    </script>
+</body>
+</html>
